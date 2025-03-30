@@ -41,6 +41,12 @@ Copy the generated HTTPS URL (e.g., `https://your-ngrok-url.ngrok.io`).
 - Navigate to **Developers > Webhooks**
 - Click **Add endpoint** and paste the Ngrok URL followed by your webhook route, e.g., `https://your-ngrok-url.ngrok.io/stripe/webhook`
 - Select the required events and save
+```sh
+payment_intent.created
+payment_intent.succeeded
+payment_intent.payment_failed
+payment_intent.canceled
+```
 
 ### 7. Test the Application
 Run the Laravel server:
