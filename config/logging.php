@@ -128,9 +128,9 @@ return [
         ],
 
         'webhook' => [
-            'driver' => 'single',
-            'path' => storage_path('logs/webhookLogs.log'),
-            'level' => 'info',
+           'driver' => 'daily',
+            'path' => storage_path('logs/webhook.log'),
+            'level' => 'debug',
         ],
 
     ],
