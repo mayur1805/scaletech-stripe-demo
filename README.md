@@ -5,7 +5,6 @@ This repository contains a Laravel-based microservice to handle webhooks. Follow
 ## Installation Guide
 
 ### 1. Clone the Project
-
 ```sh
 git clone https://github.com/mayur1805/scaletech-stripe-demo.git
 cd your-project
