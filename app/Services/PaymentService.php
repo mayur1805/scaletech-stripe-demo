@@ -96,7 +96,7 @@ class PaymentService
     public function handleGitHubWebhookEvent($request)
     {
         try{
-            Log::channel('webhook')->info($request->getContent());
+            Log::channel('webhook')->info($request->all());
             //Get GitHub webhook secreat key
             $gitHubSecret = env('GITHUB_WEBHOOK_SECRET');
             $requestSignatureHeader = $request->header('X-Hub-Signature-256');

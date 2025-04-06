@@ -55,13 +55,15 @@ payment_intent.canceled
 - Click the "Add webhook" button.
 - Click **Add endpoint** and paste the Ngrok URL followed by your webhook route, e.g., `https://your-ngrok-url.ngrok.io/webhook`
 - Content type:
-  ```sh
+```sh
 application/json
 ```
+- select the **Send me everything.**
+- Click **Add webhook to** save.
 
-- Use a secret string (e.g., your_github_secret) and store it in your .env as GITHUB_SECRET.
+- Use a secret string (e.g., your_github_secret) and store it in your .env as GITHUB_WEBHOOK_SECRET.
 
-### 7. Test the Application
+### 8. Test the Application
 Run the Laravel server:
 ```sh
 php artisan serve
