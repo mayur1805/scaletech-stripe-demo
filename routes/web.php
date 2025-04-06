@@ -10,4 +10,4 @@ Route::post('/checkout', [PaymentController::class, 'checkout'])->name('payment.
 
 
 //Stripe
-Route::post('/stripe/webhook', WebHookController::class);
+Route::post('/webhook', WebHookController::class);

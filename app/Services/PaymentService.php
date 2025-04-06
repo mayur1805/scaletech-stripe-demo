@@ -9,6 +9,9 @@ use Stripe\Exception\ApiErrorException;
 use Stripe\Exception\SignatureVerificationException;
 use Stripe\Webhook;
 use App\Helpers\Helper;
+use App\Models\GitHubLog;
+use App\Models\OtherWebhookLog;
+use Illuminate\Support\Facades\Log;
 
 class PaymentService
 {
@@ -58,6 +61,84 @@ class PaymentService
 
     public function handleWebhook($requestParam)
     {
+        $source = $this->detectSource($requestParam);
+        switch ($source) {
+            case 'github':
+                return $this->handleGitHubWebhookEvent($requestParam);
+            case 'stripe':
+                return $this->handleStripeWebhookEvent($requestParam);
+            case 'custom':
+                return $this->handleCustomWebhookEvent($requestParam);
+            default:
+                return $this->errorResponse('Unknown source');
+        }
+        
+    }
+
+    public function handleCustomWebhookEvent($request)
+    {
+        try{
+            //Get payload from another third party call
+            $payload = $request->getContent();
+            if($payload){
+                //Save the details for other webhook call 
+                OtherWebhookLog::create([
+                    "payload" => $payload
+                ]);
+            }
+            return $this->successResponse("other webhook stored successfully.");
+        }catch(\Exception $ex){
+            return $this->errorResponse($ex->getMessage());
+        }
+
+    }
+
+    public function handleGitHubWebhookEvent($request)
+    {
+        try{
+            //Get GitHub webhook secreat key
+            $gitHubSecret = env('GITHUB_WEBHOOK_SECRET');
+            $requestSignatureHeader = $request->header('X-Hub-Signature-256');
+
+            //Check the GitHub webhook response with key
+            if (!$requestSignatureHeader) {
+                return $this->errorResponse('GitHub Signature not provided');
+            }
+            
+
+            $payload = $request->getContent();
+            $hash = 'sha256=' . hash_hmac('sha256', $payload, $gitHubSecret);
+            //Check the GitHub webhook key with the response
+            if (!hash_equals($hash,  $requestSignatureHeader)) {
+                Log::channel('webhook')->warning('GitHub Webhook signature mismatch', [
+                    'expected' => $hash,
+                    'got' =>  $requestSignatureHeader
+                ]);
+                return $this->errorResponse('Invalid signature');
+            }
+            $payload = $request->all();
+
+            if (!isset($payload['commits'])) {
+                return $this->errorResponse('No commit data');
+            }
+
+            //Get the commit details and save as per the commit
+            foreach ($payload['commits'] as $commit) {
+                GitHubLog::create([
+                    'commit_id' => $commit['id'],
+                    'message' => $commit['message'],
+                    'author' => $commit['author']['name'],
+                    'payload' => json_encode($commit)
+                ]);
+            }
+            return $this->successResponse("GitHub webhook stored successfully.");
+        }catch(\Exception $ex){
+            return $this->errorResponse($ex->getMessage());
+        }
+    }
+
+    public function handleStripeWebhookEvent($requestParam)
+    {
         $webhookSecret = config('services.stripe.webhook_secret');
         $payload = $requestParam->getContent();
         $sigHeader = $requestParam->header('Stripe-Signature');
@@ -106,6 +187,21 @@ class PaymentService
         } catch (SignatureVerificationException $e) {
             return  $this->errorResponse('Invalid signature');
         }
+    }
+
+    public function detectSource($request)
+    {
+        //Get header details and check source for GitHub
+        if ($request->header('User-Agent') && str_contains($request->header('User-Agent'), 'GitHub-Hookshot')) {
+            return 'github';
+        }
+
+        //Get header details and check source for GitHub
+        if ($request->header('Stripe-Signature')) {
+            return 'stripe';
+        }
+
+        return 'custom';
     }
 
     public function getWebHookEventMessage($event)
